@@ -5,6 +5,7 @@ import eu.doytchinov.tracecraft.TraceCraft;
 import eu.doytchinov.tracecraft.events.Event;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -15,6 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = TraceCraft.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
 public class ServerHooks {
     private static long lastStart = System.nanoTime();
+    private long nextEventTime = 0;
 
     @SubscribeEvent
     public void onBlockPlace(BlockEvent.EntityPlaceEvent e) {
@@ -23,8 +25,22 @@ public class ServerHooks {
         BlockPos pos = e.getPos();
         JsonObject o = new JsonObject();
         o.addProperty("event", "place");
+        sendBlockEntityEvent(p, pos, o, e.getState());
+    }
+
+    @SubscribeEvent
+    public void onBlockBreak(BlockEvent.BreakEvent e) {
+        if (!(e.getPlayer() instanceof ServerPlayer p))
+            return;
+        BlockPos pos = e.getPos();
+        JsonObject o = new JsonObject();
+        o.addProperty("event", "break");
+        sendBlockEntityEvent(p, pos, o, e.getState());
+    }
+
+    private void sendBlockEntityEvent(ServerPlayer p, BlockPos pos, JsonObject o, BlockState state) {
         o.addProperty("player", p.getUUID().toString());
-        o.addProperty("block", e.getState().getBlock().toString());
+        o.addProperty("block", state.getBlock().toString());
         o.addProperty("x", pos.getX());
         o.addProperty("y", pos.getY());
         o.addProperty("z", pos.getZ());
@@ -50,19 +66,32 @@ public class ServerHooks {
     }
 
     @SubscribeEvent
+    public void disconnect(PlayerEvent.PlayerLoggedOutEvent e) {
+        JsonObject o = new JsonObject();
+        o.addProperty("event", "logout");
+        o.addProperty("player", e.getEntity().getUUID().toString());
+        o.addProperty("ts", System.currentTimeMillis());
+        TraceCraft.QUEUE.addEvent(new Event(o));
+    }
+
+    @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent e) {
         if (e.phase != TickEvent.Phase.END)
             return;
-        long now = System.nanoTime();
-        long dur = now - lastStart;
-        lastStart = now;
-        if (e.getServer().getTickCount() % 20 == 0) {
-            double tps = 1e9 / dur;
-            JsonObject o = new JsonObject();
-            o.addProperty("event", "tps");
-            o.addProperty("value", tps);
-            o.addProperty("ts", System.currentTimeMillis());
-            TraceCraft.QUEUE.addEvent(new Event(o));
+
+        long now = System.currentTimeMillis();
+        if (now >= nextEventTime) {
+            long dur = now - lastStart;
+            lastStart = now;
+            if (e.getServer().getTickCount() % 20 == 0) {
+                double tps = 1e9 / dur;
+                JsonObject o = new JsonObject();
+                o.addProperty("event", "tps");
+                o.addProperty("value", tps);
+                o.addProperty("ts", System.currentTimeMillis());
+                TraceCraft.QUEUE.addEvent(new Event(o));
+            }
+            nextEventTime = now + 5000;
         }
     }
 }
