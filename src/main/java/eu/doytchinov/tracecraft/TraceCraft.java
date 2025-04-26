@@ -34,7 +34,7 @@ public class TraceCraft {
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER
                 || (FMLEnvironment.dist == Dist.CLIENT
                 && net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer() != null)) {
-
+            // this starts the database only on the server side
             if (DB == null) {
                 DB = new DatabaseHelper(Path.of("mvetrace.db"));
                 Executors.newSingleThreadScheduledExecutor()
@@ -54,6 +54,10 @@ public class TraceCraft {
     public static class ClientInit {
         @net.minecraftforge.eventbus.api.SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent evt) {
+            // this sends packets to the server to store in the database
+
+            // this is a client side only event
+
             LOGGER.info("Client side initialised");
         }
     }
