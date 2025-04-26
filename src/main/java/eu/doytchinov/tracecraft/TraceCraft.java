@@ -49,16 +49,4 @@ public class TraceCraft {
     private void commonSetup(final FMLCommonSetupEvent e) {
         NetworkHandler.init();
     }
-
-    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientInit {
-        @net.minecraftforge.eventbus.api.SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent evt) {
-            // this sends packets to the server to store in the database
-
-            // this is a client side only event
-
-            LOGGER.info("Client side initialised");
-        }
-    }
 }
