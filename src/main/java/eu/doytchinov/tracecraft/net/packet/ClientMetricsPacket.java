@@ -18,11 +18,9 @@ public record ClientMetricsPacket(int fps, long mem) {
 
     public void handle(ServerPlayer sender) {
         JsonObject o = new JsonObject();
-        o.addProperty("event",  "client");
         o.addProperty("player", sender.getUUID().toString());
         o.addProperty("fps",    fps);
         o.addProperty("mem",    mem);
-        o.addProperty("ts",     System.currentTimeMillis());
-        TraceCraft.QUEUE.addEvent(new Event(o));
+        TraceCraft.QUEUE.addEvent(new Event(o, "client_metrics"));
     }
 }

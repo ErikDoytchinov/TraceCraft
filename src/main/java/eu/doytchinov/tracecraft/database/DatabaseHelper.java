@@ -56,8 +56,8 @@ public class DatabaseHelper implements Runnable {
 
             for (int i = 0; i < batch.size(); i++) {
                 var ev = batch.get(i);
-                ps.setString(1, ev.getString("event"));
-                ps.setLong(2, ev.getLong("ts"));
+                ps.setString(1, ev.getEvent());
+                ps.setLong(2, ev.getTimestamp());
                 ps.setString(3, ev.toString());
                 ps.addBatch();
             }

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import eu.doytchinov.tracecraft.TraceCraft;
 import eu.doytchinov.tracecraft.events.Event;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
@@ -13,85 +14,80 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = TraceCraft.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
-public class ServerHooks {
-    private static long lastStart = System.nanoTime();
-    private long nextEventTime = 0;
+@Mod.EventBusSubscriber(
+        modid = TraceCraft.MODID,
+        bus = Mod.EventBusSubscriber.Bus.FORGE,
+        value = Dist.DEDICATED_SERVER
+)
+public final class ServerHooks {
+    private static long lastSampleMs  = System.currentTimeMillis();
+    private static long lastSampleTick = 0L;
 
     @SubscribeEvent
-    public void onBlockPlace(BlockEvent.EntityPlaceEvent e) {
-        if (!(e.getEntity() instanceof ServerPlayer p))
-            return;
-        BlockPos pos = e.getPos();
-        JsonObject o = new JsonObject();
-        o.addProperty("event", "place");
-        sendBlockEntityEvent(p, pos, o, e.getState());
+    public static void onBlockPlace(BlockEvent.EntityPlaceEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        sendBlockEntityEvent(p, e.getPos(), e.getState(), "block_place");
     }
 
     @SubscribeEvent
-    public void onBlockBreak(BlockEvent.BreakEvent e) {
-        if (!(e.getPlayer() instanceof ServerPlayer p))
-            return;
-        BlockPos pos = e.getPos();
-        JsonObject o = new JsonObject();
-        o.addProperty("event", "break");
-        sendBlockEntityEvent(p, pos, o, e.getState());
+    public static void onBlockBreak(BlockEvent.BreakEvent e) {
+        if (!(e.getPlayer() instanceof ServerPlayer p)) return;
+        sendBlockEntityEvent(p, e.getPos(), e.getState(), "block_break");
     }
 
-    private void sendBlockEntityEvent(ServerPlayer p, BlockPos pos, JsonObject o, BlockState state) {
+    private static void sendBlockEntityEvent(ServerPlayer p,
+                                             BlockPos pos,
+                                             BlockState state,
+                                             String type) {
+        JsonObject o = new JsonObject();
         o.addProperty("player", p.getUUID().toString());
-        o.addProperty("block", state.getBlock().toString());
+        o.addProperty("block",  state.getBlock().toString());
         o.addProperty("x", pos.getX());
         o.addProperty("y", pos.getY());
         o.addProperty("z", pos.getZ());
-        o.addProperty("ts", System.currentTimeMillis());
-        TraceCraft.QUEUE.addEvent(new Event(o));
+        TraceCraft.QUEUE.addEvent(new Event(o, type));
     }
 
     @SubscribeEvent
-    public void login(PlayerEvent.PlayerLoggedInEvent e) {
+    public static void login(PlayerEvent.PlayerLoggedInEvent e) {
         JsonObject o = new JsonObject();
-        o.addProperty("event", "login");
         o.addProperty("player", e.getEntity().getUUID().toString());
-        o.addProperty("ts", System.currentTimeMillis());
-        TraceCraft.QUEUE.addEvent(new Event(o));
+        TraceCraft.QUEUE.addEvent(new Event(o, "login"));
 
-        // since the player joined here we can send them a
-        // message saying we are collecting their data
         if (e.getEntity() instanceof ServerPlayer player) {
             player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                    "TraceCraft: We are collecting your data for research purposes. If you do not want this, please leave the server."
+                    "TraceCraft: We are collecting your gameplay data for research. " +
+                            "If you prefer not to participate, please disconnect."
             ));
         }
     }
 
     @SubscribeEvent
-    public void disconnect(PlayerEvent.PlayerLoggedOutEvent e) {
+    public static void logout(PlayerEvent.PlayerLoggedOutEvent e) {
         JsonObject o = new JsonObject();
-        o.addProperty("event", "logout");
         o.addProperty("player", e.getEntity().getUUID().toString());
-        o.addProperty("ts", System.currentTimeMillis());
-        TraceCraft.QUEUE.addEvent(new Event(o));
+        TraceCraft.QUEUE.addEvent(new Event(o, "logout"));
     }
 
     @SubscribeEvent
-    public void tick(TickEvent.ServerTickEvent e) {
-        if (e.phase != TickEvent.Phase.END)
-            return;
+    public static void tick(TickEvent.ServerTickEvent event) {
+        // run exactly once per server tick
+        if (event.phase != TickEvent.Phase.END) return;
 
-        long now = System.currentTimeMillis();
-        if (now >= nextEventTime) {
-            long dur = now - lastStart;
-            lastStart = now;
-            if (e.getServer().getTickCount() % 20 == 0) {
-                double tps = 1e9 / dur;
-                JsonObject o = new JsonObject();
-                o.addProperty("event", "tps");
-                o.addProperty("value", tps);
-                o.addProperty("ts", System.currentTimeMillis());
-                TraceCraft.QUEUE.addEvent(new Event(o));
-            }
-            nextEventTime = now + 5000;
+        MinecraftServer server = event.getServer();
+        long nowMs             = System.currentTimeMillis();
+        long elapsedMs         = nowMs - lastSampleMs;
+
+        if (elapsedMs >= 5000L) {
+            long tickDelta = server.getTickCount() - lastSampleTick;
+            double tps     = (tickDelta * 1000.0) / elapsedMs;
+
+            JsonObject o = new JsonObject();
+            o.addProperty("value", tps);
+            TraceCraft.QUEUE.addEvent(new Event(o, "tps"));
+
+            lastSampleMs   = nowMs;
+            lastSampleTick = server.getTickCount();
         }
     }
 }
