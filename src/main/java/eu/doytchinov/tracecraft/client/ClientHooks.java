@@ -21,7 +21,7 @@ public final class ClientHooks {
         if (e.phase != TickEvent.Phase.END) return;
 
         long now = System.currentTimeMillis();
-        if (now - lastSent < 1_000) return;      // send once per second
+        if (now - lastSent < 5_000) return;      // send once per second
         lastSent = now;
 
         int   fps = Minecraft.getInstance().getFps();
