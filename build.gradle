@@ -122,6 +122,8 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
+    implementation 'org.influxdb:influxdb-java:2.23'
+    jarJar 'org.influxdb:influxdb-java:2.23'
 
     implementation fg.deobf("org.xerial:sqlite-jdbc:3.45.2.0")
     jarJar("org.xerial:sqlite-jdbc:3.45.2.0")
