@@ -18,5 +18,6 @@ public class Event {
 
     public String getString(String k){ return json.get(k).getAsString(); }
     public long   getLong  (String k){ return json.get(k).getAsLong(); }
+    public double getDouble(String k){ return json.get(k).getAsDouble(); }
     @Override public String toString(){ return json.toString(); }
 }

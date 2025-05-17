@@ -48,8 +48,6 @@ public class InfluxDBHelper implements Runnable {
             Point.Builder pointBuilder = Point.measurement(ev.getEvent())
                     .time(ev.getTimestamp(), TimeUnit.MILLISECONDS);
 
-            // pointBuilder.tag("server_id", "your_server_identifier");
-
             String eventType = ev.getEvent();
 
             try {
@@ -82,6 +80,10 @@ public class InfluxDBHelper implements Runnable {
                         pointBuilder.tag("player", ev.getString("player"));
                         pointBuilder.addField("fps", ev.getLong("fps"));
                         pointBuilder.addField("mem", ev.getLong("mem"));
+                        break;
+                    case "tick_metrics":
+                        pointBuilder.addField("duration_ms", ev.getDouble("duration_ms"));
+                        pointBuilder.addField("isr", ev.getDouble("isr"));
                         break;
                     default:
                         pointBuilder.addField("json_data", ev.toString());

@@ -14,10 +14,7 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.List;
 
-@Mod.EventBusSubscriber(
-        modid = TraceCraft.MODID,
-        bus   = Mod.EventBusSubscriber.Bus.FORGE,
-        value = Dist.DEDICATED_SERVER)
+@Mod.EventBusSubscriber(modid = TraceCraft.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
 public final class TimedEventManager {
     private static long nextPlayerCountEvent = System.currentTimeMillis() + 60_000L;
     private static long nextChunkMarginEvent = System.currentTimeMillis() + 10_000L;
@@ -43,12 +40,12 @@ public final class TimedEventManager {
 
         if (now >= nextChunkMarginEvent) {
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-                ServerLevel level = p.serverLevel();          // shortcut
+                ServerLevel level = p.serverLevel(); // shortcut
 
                 int dChunks = ChunkUtils.distanceToUnloaded(p, level);
 
                 JsonObject o = new JsonObject();
-                o.addProperty("player",          p.getUUID().toString());
+                o.addProperty("player", p.getUUID().toString());
                 o.addProperty("distance_chunks", dChunks);
                 o.addProperty("distance_blocks", dChunks * 16);
 
