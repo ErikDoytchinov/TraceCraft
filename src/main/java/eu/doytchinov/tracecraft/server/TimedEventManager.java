@@ -26,21 +26,24 @@ public final class TimedEventManager {
     private static long nextPlayerCountEvent = System.currentTimeMillis() + 60_000L;
     private static long nextChunkMarginEvent = System.currentTimeMillis() + 10_000L;
     private static long nextQueueMetricsEvent = System.currentTimeMillis() + 10_000L;
+    private static long nextSystemMetricsEvent = System.currentTimeMillis() + 10_000L;
 
     private static final long METRICS_INTERVAL_SECONDS = 10L;
     private static final long METRICS_INTERVAL_MS = METRICS_INTERVAL_SECONDS * 1000L;
 
-    private static final HashMap<UUID, Integer> lastTotalSentPackets = new HashMap<>(); // Changed to Integer for sentPackets
+    private static final HashMap<UUID, Integer> lastTotalSentPackets = new HashMap<>();
     private static final HashMap<UUID, Long> lastMetricsTime = new HashMap<>();
 
-    private static Field sentPacketsField; // Field for sentPackets (int)
+    private static Field sentPacketsField;
 
     static {
         try {
             sentPacketsField = Connection.class.getDeclaredField("sentPackets");
             sentPacketsField.setAccessible(true);
         } catch (Throwable t) {
-            LogUtils.getLogger().error("[TraceCraft] CRITICAL: Unexpected Throwable during reflection field initialization for 'sentPackets'. PPS metrics will NOT be collected.", t);
+            LogUtils.getLogger().error(
+                    "[TraceCraft] CRITICAL: Unexpected Throwable during reflection field initialization for 'sentPackets'. PPS metrics will NOT be collected.",
+                    t);
             sentPacketsField = null;
         }
     }
@@ -144,15 +147,38 @@ public final class TimedEventManager {
                 o.addProperty("queued_messages", getPendingMessageCount(player));
                 o.addProperty("queued_bytes", getPendingByteCount(player));
 
+
+
                 o.addProperty("packets_per_second", pps);
                 o.addProperty("average_packet_size_bytes",
-                        getPendingByteCount(player) / Math.max(1, getPendingMessageCount(player))); // TOOD: Verify this is valid way of calculating this metric
+                        getPendingByteCount(player) / Math.max(1, getPendingMessageCount(player))); // TOOD: Verify this
+                                                                                                    // is valid way of
+                                                                                                    // calculating this
+                                                                                                    // metric
                 TraceCraft.QUEUE.addEvent(new Event(o, "player_network_stats"));
 
                 lastTotalSentPackets.put(playerUUID, totalSentPacketsNow);
                 lastMetricsTime.put(playerUUID, currentTime);
             }
             nextQueueMetricsEvent = now + METRICS_INTERVAL_MS;
+        }
+
+        if (now >= nextSystemMetricsEvent) {
+            Runtime runtime = Runtime.getRuntime();
+            long maxMemory = runtime.maxMemory();
+            long allocatedMemory = runtime.totalMemory();
+            long freeMemory = runtime.freeMemory();
+            long usedMemory = allocatedMemory - freeMemory;
+
+            JsonObject systemMetrics = new JsonObject();
+            systemMetrics.addProperty("max_heap_mb", maxMemory / (1024 * 1024));
+            systemMetrics.addProperty("allocated_heap_mb", allocatedMemory / (1024 * 1024));
+            systemMetrics.addProperty("used_heap_mb", usedMemory / (1024 * 1024));
+            systemMetrics.addProperty("free_heap_mb", freeMemory / (1024 * 1024));
+            systemMetrics.addProperty("thread_count", Thread.activeCount());
+
+            TraceCraft.QUEUE.addEvent(new Event(systemMetrics, "system_metrics"));
+            nextSystemMetricsEvent = now + METRICS_INTERVAL_MS;
         }
     }
 }

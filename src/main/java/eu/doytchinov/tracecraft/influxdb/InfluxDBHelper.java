@@ -99,6 +99,13 @@ public class InfluxDBHelper implements Runnable {
                         pointBuilder.addField("packets_per_second", ev.getDouble("packets_per_second"));
                         pointBuilder.addField("average_packet_size_bytes", ev.getDouble("average_packet_size_bytes"));
                         break;
+                    case "system_metrics":
+                        pointBuilder.addField("max_heap_mb", ev.getLong("max_heap_mb"));
+                        pointBuilder.addField("allocated_heap_mb", ev.getLong("allocated_heap_mb"));
+                        pointBuilder.addField("used_heap_mb", ev.getLong("used_heap_mb"));
+                        pointBuilder.addField("free_heap_mb", ev.getLong("free_heap_mb"));
+                        pointBuilder.addField("thread_count", ev.getLong("thread_count"));
+                        break;
                     default:
                         pointBuilder.addField("json_data", ev.toString());
                         LOGGER.fine("Event type '" + eventType + "' stored as raw JSON.");
