@@ -26,7 +26,7 @@ public class TraceCraft {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final EventQueue QUEUE = new EventQueue();
-    private static InfluxDBHelper INFLUX_DB_HELPER; // New InfluxDB helper instance
+    private static InfluxDBHelper INFLUX_DB_HELPER;
     private static ScheduledExecutorService SCHEDULER;
 
     public TraceCraft(FMLJavaModLoadingContext context) {
@@ -37,7 +37,7 @@ public class TraceCraft {
 
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER
                 || (FMLEnvironment.dist == Dist.CLIENT
-                        && net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer() != null)) {
+                && net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer() != null)) {
             // this starts the database connection only on the server side
             if (INFLUX_DB_HELPER == null) {
                 try {

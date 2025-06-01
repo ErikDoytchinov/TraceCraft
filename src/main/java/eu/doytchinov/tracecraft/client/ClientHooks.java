@@ -10,6 +10,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
+import java.util.Objects;
+
 @Mod.EventBusSubscriber(modid = TraceCraft.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ClientHooks {
 
@@ -26,8 +28,9 @@ public final class ClientHooks {
 
         int   fps = Minecraft.getInstance().getFps();
         long  mem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        long ping = Objects.requireNonNull(Minecraft.getInstance().getConnection().getServerData()).ping;
 
         NetworkHandler.CHANNEL
-                .send(new ClientMetricsPacket(fps, mem), PacketDistributor.SERVER.noArg());
+                .send(new ClientMetricsPacket(fps, mem, ping), PacketDistributor.SERVER.noArg());
     }
 }
