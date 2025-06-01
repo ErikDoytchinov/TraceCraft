@@ -85,6 +85,19 @@ public class InfluxDBHelper implements Runnable {
                         pointBuilder.addField("duration_ms", ev.getDouble("duration_ms"));
                         pointBuilder.addField("isr", ev.getDouble("isr"));
                         break;
+                    case "physics_event":
+                        pointBuilder.tag("block", ev.getString("block"));
+                        pointBuilder.addField("x", ev.getLong("x"));
+                        pointBuilder.addField("y", ev.getLong("y"));
+                        pointBuilder.addField("z", ev.getLong("z"));
+                        break;
+                    case "player_network_stats":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.addField("queued_messages", ev.getLong("queued_messages"));
+                        pointBuilder.addField("queued_bytes", ev.getLong("queued_bytes"));
+                        pointBuilder.addField("packets_per_second", ev.getDouble("packets_per_second"));
+                        pointBuilder.addField("average_packet_size_bytes", ev.getDouble("average_packet_size_bytes"));
+                        break;
                     default:
                         pointBuilder.addField("json_data", ev.toString());
                         LOGGER.fine("Event type '" + eventType + "' stored as raw JSON.");
