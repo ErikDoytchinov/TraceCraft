@@ -6,6 +6,7 @@ import eu.doytchinov.tracecraft.events.Event;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
@@ -13,6 +14,13 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraft.world.level.block.piston.PistonBaseBlock;
+import net.minecraft.world.level.block.piston.MovingPistonBlock;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.RedStoneWireBlock;
+import net.minecraft.world.level.block.ObserverBlock;
+import net.minecraft.world.level.block.RepeaterBlock;
+import net.minecraft.world.level.block.ComparatorBlock;
 
 @Mod.EventBusSubscriber(modid = TraceCraft.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
 public final class ServerHooks {
@@ -128,6 +136,13 @@ public final class ServerHooks {
     }
 
     private static boolean isPhysicsRelevant(BlockState state) {
-        return state.getBlock() instanceof net.minecraft.world.level.block.FallingBlock;
+        return state.getBlock() instanceof FallingBlock ||
+               state.getBlock() instanceof PistonBaseBlock ||
+               state.getBlock() instanceof MovingPistonBlock ||
+               state.getBlock() instanceof LiquidBlock ||
+               state.getBlock() instanceof RedStoneWireBlock ||
+               state.getBlock() instanceof ObserverBlock ||
+               state.getBlock() instanceof RepeaterBlock ||
+               state.getBlock() instanceof ComparatorBlock;
     }
 }
