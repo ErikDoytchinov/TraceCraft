@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.Connection;
+import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -27,6 +28,7 @@ public final class TimedEventManager {
     private static long nextChunkMarginEvent = System.currentTimeMillis() + 10_000L;
     private static long nextQueueMetricsEvent = System.currentTimeMillis() + 10_000L;
     private static long nextSystemMetricsEvent = System.currentTimeMillis() + 10_000L;
+    private static long nextEntityCountEvent = System.currentTimeMillis() + 5_000L;
 
     private static final long METRICS_INTERVAL_SECONDS = 10L;
     private static final long METRICS_INTERVAL_MS = METRICS_INTERVAL_SECONDS * 1000L;
@@ -91,6 +93,28 @@ public final class TimedEventManager {
             nextPlayerCountEvent = now + 60_000L;
         }
 
+        if (now >= nextEntityCountEvent) {
+            for (ServerLevel level : server.getAllLevels()) {
+                JsonObject levelMetrics = new JsonObject();
+                levelMetrics.addProperty("level_name", level.dimension().location().toString());
+                HashMap<String, Integer> entityCounts = new HashMap<>();
+                int totalEntities = 0;
+                for (Entity entity : level.getAllEntities()) {
+                    String entityTypeName = entity.getType().toShortString();
+                    entityCounts.put(entityTypeName, entityCounts.getOrDefault(entityTypeName, 0) + 1);
+                    totalEntities++;
+                }
+                levelMetrics.addProperty("total_entities", totalEntities);
+                JsonObject entityTypeCounts = new JsonObject();
+                for (String entityType : entityCounts.keySet()) {
+                    entityTypeCounts.addProperty(entityType, entityCounts.get(entityType));
+                }
+                levelMetrics.add("entity_types", entityTypeCounts);
+                TraceCraft.QUEUE.addEvent(new Event(levelMetrics, "entity_count"));
+            }
+            nextEntityCountEvent = now + 5_000L; // Schedule next event
+        }
+
         if (now >= nextChunkMarginEvent) {
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 ServerLevel level = p.serverLevel();
@@ -146,8 +170,6 @@ public final class TimedEventManager {
                 o.addProperty("player", playerUUID.toString());
                 o.addProperty("queued_messages", getPendingMessageCount(player));
                 o.addProperty("queued_bytes", getPendingByteCount(player));
-
-
 
                 o.addProperty("packets_per_second", pps);
                 o.addProperty("average_packet_size_bytes",

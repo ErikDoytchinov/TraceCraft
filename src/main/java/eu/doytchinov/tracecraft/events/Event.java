@@ -7,17 +7,38 @@ public class Event {
     private final String event;
     private final long timestamp;
 
-    public Event(JsonObject j, String event){
+    public Event(JsonObject j, String event) {
         this.json = j;
         this.event = event;
         this.timestamp = System.currentTimeMillis();
     }
 
-    public String getEvent(){ return event; }
-    public long   getTimestamp(){ return timestamp; }
+    public String getEvent() {
+        return event;
+    }
 
-    public String getString(String k){ return json.get(k).getAsString(); }
-    public long   getLong  (String k){ return json.get(k).getAsLong(); }
-    public double getDouble(String k){ return json.get(k).getAsDouble(); }
-    @Override public String toString(){ return json.toString(); }
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public String getString(String k) {
+        return json.get(k).getAsString();
+    }
+
+    public long getLong(String k) {
+        return json.get(k).getAsLong();
+    }
+
+    public double getDouble(String k) {
+        return json.get(k).getAsDouble();
+    }
+
+    public JsonObject getJson() {
+        return json;
+    }
+
+    @Override
+    public String toString() {
+        return json.toString();
+    }
 }

@@ -1,5 +1,6 @@
 package eu.doytchinov.tracecraft.influxdb;
 
+import com.google.gson.JsonObject;
 import eu.doytchinov.tracecraft.TraceCraft;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
@@ -105,6 +106,16 @@ public class InfluxDBHelper implements Runnable {
                         pointBuilder.addField("used_heap_mb", ev.getLong("used_heap_mb"));
                         pointBuilder.addField("free_heap_mb", ev.getLong("free_heap_mb"));
                         pointBuilder.addField("thread_count", ev.getLong("thread_count"));
+                        break;
+                    case "entity_count":
+                        pointBuilder.tag("level_name", ev.getString("level_name"));
+                        pointBuilder.addField("total_entities", ev.getLong("total_entities"));
+                        JsonObject entityTypes = ev.getJson().getAsJsonObject("entity_types");
+                        if (entityTypes != null) {
+                            for (String entityType : entityTypes.keySet()) {
+                                pointBuilder.addField(entityType, entityTypes.get(entityType).getAsInt());
+                            }
+                        }
                         break;
                     default:
                         pointBuilder.addField("json_data", ev.toString());
