@@ -117,6 +117,16 @@ public class InfluxDBHelper implements Runnable {
                             }
                         }
                         break;
+                    case "lighting_update_world_load":
+                        pointBuilder.tag("world", ev.getString("world"));
+                        pointBuilder.addField("event", 1);
+                        break;
+                    case "chunk_generation":
+                        pointBuilder.tag("world", ev.getString("world"));
+                        pointBuilder.addField("chunk_x", ev.getLong("chunk_x"));
+                        pointBuilder.addField("chunk_z", ev.getLong("chunk_z"));
+                        pointBuilder.addField("generation_time_ms", ev.getDouble("generation_time_ms"));
+                        break;
                     default:
                         pointBuilder.addField("json_data", ev.toString());
                         LOGGER.fine("Event type '" + eventType + "' stored as raw JSON.");

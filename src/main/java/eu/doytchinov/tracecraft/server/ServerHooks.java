@@ -12,6 +12,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
@@ -21,31 +23,28 @@ import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.ObserverBlock;
 import net.minecraft.world.level.block.RepeaterBlock;
 import net.minecraft.world.level.block.ComparatorBlock;
+import net.minecraft.server.level.ServerLevel;
 
 @Mod.EventBusSubscriber(modid = TraceCraft.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
 public final class ServerHooks {
     private static long lastSampleMs = System.currentTimeMillis();
     private static long lastSampleTick = 0L;
     private static long tickStartNanos;
+    private static long chunkGenStartNanos;
 
     @SubscribeEvent
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent e) {
-        if (!(e.getEntity() instanceof ServerPlayer p))
-            return;
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
         sendBlockEntityEvent(p, e.getPos(), e.getState(), "block_place");
     }
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent e) {
-        if (!(e.getPlayer() instanceof ServerPlayer p))
-            return;
+        if (!(e.getPlayer() instanceof ServerPlayer p)) return;
         sendBlockEntityEvent(p, e.getPos(), e.getState(), "block_break");
     }
 
-    private static void sendBlockEntityEvent(ServerPlayer p,
-                                             BlockPos pos,
-                                             BlockState state,
-                                             String type) {
+    private static void sendBlockEntityEvent(ServerPlayer p, BlockPos pos, BlockState state, String type) {
         JsonObject o = new JsonObject();
         o.addProperty("player", p.getUUID().toString());
         o.addProperty("block", state.getBlock().toString());
@@ -62,9 +61,7 @@ public final class ServerHooks {
         TraceCraft.QUEUE.addEvent(new Event(o, "login"));
 
         if (e.getEntity() instanceof ServerPlayer player) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                    "TraceCraft: We are collecting your gameplay data for research. " +
-                            "If you prefer not to participate, please disconnect."));
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("TraceCraft: We are collecting your gameplay data for research. " + "If you prefer not to participate, please disconnect."));
         }
     }
 
@@ -78,8 +75,7 @@ public final class ServerHooks {
     @SubscribeEvent
     public static void tick(TickEvent.ServerTickEvent event) {
         // run exactly once per server tick
-        if (event.phase != TickEvent.Phase.END)
-            return;
+        if (event.phase != TickEvent.Phase.END) return;
 
         MinecraftServer server = event.getServer();
         long nowMs = System.currentTimeMillis();
@@ -100,15 +96,13 @@ public final class ServerHooks {
 
     @SubscribeEvent
     public static void onTickStart(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.START)
-            return;
+        if (event.phase != TickEvent.Phase.START) return;
         tickStartNanos = System.nanoTime();
     }
 
     @SubscribeEvent
     public static void onTickEndMetrics(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END)
-            return;
+        if (event.phase != TickEvent.Phase.END) return;
         long durationNanos = System.nanoTime() - tickStartNanos;
         double durationMs = durationNanos / 1_000_000.0;
         double expectedMs = 50.0;
@@ -118,6 +112,49 @@ public final class ServerHooks {
         o.addProperty("duration_ms", durationMs);
         o.addProperty("isr", isr);
         TraceCraft.QUEUE.addEvent(new Event(o, "tick_metrics"));
+    }
+
+    @SubscribeEvent
+    public static void onLightUpdate(LevelEvent.Load event) {
+        if (event.getLevel() == null) {
+            return;
+        }
+        // it's not possible to get the exact position of a lighting update from this
+        // event
+        // but we can log that a lighting update occurred in a specific world
+        JsonObject o = new JsonObject();
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            o.addProperty("world", serverLevel.dimension().location().toString());
+        }
+        TraceCraft.QUEUE.addEvent(new Event(o, "lighting_update_world_load"));
+    }
+
+    @SubscribeEvent
+    public static void onChunkLoad(ChunkEvent.Load event) {
+        chunkGenStartNanos = System.nanoTime();
+    }
+
+    @SubscribeEvent
+    public static void onChunkGenerated(ChunkEvent.Load event) {
+        if (chunkGenStartNanos == 0) {
+            return;
+        }
+        long durationNanos = System.nanoTime() - chunkGenStartNanos;
+        double durationMs = durationNanos / 1_000_000.0;
+        chunkGenStartNanos = 0;
+
+        if (event.getLevel() == null || event.getChunk() == null) {
+            return;
+        }
+
+        JsonObject o = new JsonObject();
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            o.addProperty("world", serverLevel.dimension().location().toString());
+        }
+        o.addProperty("chunk_x", event.getChunk().getPos().x);
+        o.addProperty("chunk_z", event.getChunk().getPos().z);
+        o.addProperty("generation_time_ms", durationMs);
+        TraceCraft.QUEUE.addEvent(new Event(o, "chunk_generation"));
     }
 
     @SubscribeEvent
@@ -137,12 +174,12 @@ public final class ServerHooks {
 
     private static boolean isPhysicsRelevant(BlockState state) {
         return state.getBlock() instanceof FallingBlock ||
-               state.getBlock() instanceof PistonBaseBlock ||
-               state.getBlock() instanceof MovingPistonBlock ||
-               state.getBlock() instanceof LiquidBlock ||
-               state.getBlock() instanceof RedStoneWireBlock ||
-               state.getBlock() instanceof ObserverBlock ||
-               state.getBlock() instanceof RepeaterBlock ||
-               state.getBlock() instanceof ComparatorBlock;
+                state.getBlock() instanceof PistonBaseBlock ||
+                state.getBlock() instanceof MovingPistonBlock ||
+                state.getBlock() instanceof LiquidBlock ||
+                state.getBlock() instanceof RedStoneWireBlock ||
+                state.getBlock() instanceof ObserverBlock ||
+                state.getBlock() instanceof RepeaterBlock ||
+                state.getBlock() instanceof ComparatorBlock;
     }
 }
