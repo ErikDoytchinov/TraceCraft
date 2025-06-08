@@ -16,18 +16,19 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.level.ChunkEvent;
+import eu.doytchinov.tracecraft.events.Event;
 
 public class WorldInteractionHandler {
 
     private static long chunkGenStartNanos;
 
     private static void sendBlockEntityEvent(ServerPlayer p, BlockPos pos, BlockState state, String type) {
-        JsonObject o = EventHelper.createPlayerPayload(p.getUUID());
+        JsonObject o = Event.createPlayerPayload(p.getUUID());
         o.addProperty("block", state.getBlock().toString());
         o.addProperty("x", pos.getX());
         o.addProperty("y", pos.getY());
         o.addProperty("z", pos.getZ());
-        EventHelper.sendEvent(type, o);
+        Event.sendEvent(type, o);
         // mark player active on block interaction
         PlayerSessionData.getLastActiveMs().put(p.getUUID(), System.currentTimeMillis());
     }
@@ -52,7 +53,7 @@ public class WorldInteractionHandler {
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             o.addProperty("world", serverLevel.dimension().location().toString());
         }
-        EventHelper.sendEvent("lighting_update_world_load", o);
+        Event.sendEvent("lighting_update_world_load", o);
     }
 
     public static void handleChunkLoad(ChunkEvent.Load event) {
@@ -60,12 +61,12 @@ public class WorldInteractionHandler {
     }
 
     public static void handleChunkGenerated(ChunkEvent.Load event) {
-        if (chunkGenStartNanos == 0) { // Ensure this is from a corresponding load event
+        if (chunkGenStartNanos == 0) {
             return;
         }
         long durationNanos = System.nanoTime() - chunkGenStartNanos;
         double durationMs = durationNanos / 1_000_000.0;
-        chunkGenStartNanos = 0; // Reset for next event or if no corresponding load
+        chunkGenStartNanos = 0;
 
         if (event.getLevel() == null || event.getChunk() == null) {
             return;
@@ -78,7 +79,7 @@ public class WorldInteractionHandler {
         o.addProperty("chunk_x", event.getChunk().getPos().x);
         o.addProperty("chunk_z", event.getChunk().getPos().z);
         o.addProperty("generation_time_ms", durationMs);
-        EventHelper.sendEvent("chunk_generated", o);
+        Event.sendEvent("chunk_generated", o);
     }
 
     private static boolean isPhysicsRelevant(BlockState state) {
@@ -101,7 +102,7 @@ public class WorldInteractionHandler {
             o.addProperty("x", pos.getX());
             o.addProperty("y", pos.getY());
             o.addProperty("z", pos.getZ());
-            EventHelper.sendEvent("physics_event", o);
+            Event.sendEvent("physics_event", o);
         }
     }
 }

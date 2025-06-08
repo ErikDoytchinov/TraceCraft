@@ -1,33 +1,37 @@
 package eu.doytchinov.tracecraft.server;
 
 import com.google.gson.JsonObject;
+import com.mojang.logging.LogUtils;
+import eu.doytchinov.tracecraft.events.Event;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.TickEvent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class PlayerEventHandler {
-
     private static final long AFK_THRESHOLD_MS = 300_000L; // 5 minutes
     private static long pathSampleIntervalMs = 1000L;
     private static long lastPathSampleMs = System.currentTimeMillis();
 
     public static void handleLogin(PlayerEvent.PlayerLoggedInEvent e) {
         UUID playerId = e.getEntity().getUUID();
-        EventHelper.sendEvent("login", EventHelper.createPlayerPayload(playerId));
+        Event.sendEvent("login", Event.createPlayerPayload(playerId));
 
         if (e.getEntity() instanceof ServerPlayer player) {
             player.sendSystemMessage(net.minecraft.network.chat.Component
@@ -39,22 +43,22 @@ public class PlayerEventHandler {
 
     public static void handleLogout(PlayerEvent.PlayerLoggedOutEvent e) {
         UUID id = e.getEntity().getUUID();
-        EventHelper.sendEvent("logout", EventHelper.createPlayerPayload(id));
+        Event.sendEvent("logout", Event.createPlayerPayload(id));
 
-        JsonObject distancePayload = EventHelper.createPlayerPayload(id);
+        JsonObject distancePayload = Event.createPlayerPayload(id);
         distancePayload.addProperty("distance", PlayerSessionData.getSessionDistance().getOrDefault(id, 0.0));
-        EventHelper.sendEvent("session_distance", distancePayload);
+        Event.sendEvent("session_distance", distancePayload);
 
         for (var entry : PlayerSessionData.getBiomeTime().getOrDefault(id, Map.of()).entrySet()) {
-            JsonObject biomePayload = EventHelper.createPlayerPayload(id);
+            JsonObject biomePayload = Event.createPlayerPayload(id);
             biomePayload.addProperty("biome", entry.getKey());
             biomePayload.addProperty("duration_ms", entry.getValue());
-            EventHelper.sendEvent("biome_time", biomePayload);
+            Event.sendEvent("biome_time", biomePayload);
         }
 
-        JsonObject idlePayload = EventHelper.createPlayerPayload(id);
+        JsonObject idlePayload = Event.createPlayerPayload(id);
         idlePayload.addProperty("idle_ms", PlayerSessionData.getIdleTimeMs().getOrDefault(id, 0L));
-        EventHelper.sendEvent("session_idle", idlePayload);
+        Event.sendEvent("session_idle", idlePayload);
 
         PlayerSessionData.clearPlayerData(id);
     }
@@ -65,8 +69,7 @@ public class PlayerEventHandler {
         JsonObject o = new JsonObject();
         o.addProperty("player", p.getUUID().toString());
         o.addProperty("item", e.getItemStack().getItem().toString());
-        EventHelper.sendEvent("item_use", o);
-        // Mark active on item use
+        Event.sendEvent("item_use", o);
         PlayerSessionData.getLastActiveMs().put(p.getUUID(), System.currentTimeMillis());
     }
 
@@ -84,7 +87,7 @@ public class PlayerEventHandler {
         } else if (attacker instanceof LivingEntity le) {
             o.addProperty("attacker_entity", le.getType().toShortString());
         }
-        EventHelper.sendEvent("combat_event", o);
+        Event.sendEvent("combat_event", o);
     }
 
     public static void handlePlayerDeath(LivingDeathEvent event) {
@@ -97,7 +100,7 @@ public class PlayerEventHandler {
         o.addProperty("y", pos.getY());
         o.addProperty("z", pos.getZ());
         o.addProperty("cause", event.getSource().getMsgId());
-        EventHelper.sendEvent("player_death", o);
+        Event.sendEvent("player_death", o);
     }
 
     public static void samplePlayerPathsAndProximity(TickEvent.ServerTickEvent event, MinecraftServer server) {
@@ -129,42 +132,44 @@ public class PlayerEventHandler {
             }
             PlayerSessionData.getLastSessionPos().put(id, currentPos);
 
-            // Accumulate biome time
             ServerLevel lvl = player.serverLevel();
-            Biome bm = lvl.getBiome(currentPos).value();
-            // Add null check for biome key
-            net.minecraft.resources.ResourceLocation biomeKey = ForgeRegistries.BIOMES.getKey(bm);
-            if (biomeKey != null) {
-                String bid = biomeKey.toString();
+            Holder<Biome> biomeHolder = lvl.getBiome(currentPos);
+            Optional<ResourceKey<Biome>> optKey = biomeHolder.unwrapKey();
+
+            if (optKey.isPresent()) {
+                ResourceLocation biomeRL = optKey.get().location();
+                String bid = biomeRL.toString();
                 var playerBiomeTimes = PlayerSessionData.getBiomeTime().get(id);
                 if (playerBiomeTimes != null) {
-                    playerBiomeTimes.put(bid, playerBiomeTimes.getOrDefault(bid, 0L) + delta);
+                    long newTime = playerBiomeTimes.getOrDefault(bid, 0L) + delta;
+                    playerBiomeTimes.put(bid, newTime);
+                    LogUtils.getLogger().debug("Player {} biome time updated for {}: {}", id, bid, newTime);
                 }
             } else {
-                // Log or handle the case where biome key is null, e.g., by skipping biome time
-                // update for this tick
-                // For now, we'll just skip it
+                LogUtils.getLogger().warn("Biome holder has no registry key for player {} at {}", id, currentPos);
             }
 
             // AFK detection
             long lastAct = PlayerSessionData.getLastActiveMs().getOrDefault(id, now);
             if (moved) {
                 PlayerSessionData.getLastActiveMs().put(id, now);
+                LogUtils.getLogger().debug("Player {} marked active due to movement.", id);
             } else if (now - lastAct >= AFK_THRESHOLD_MS) {
                 PlayerSessionData.getIdleTimeMs().put(id,
                         PlayerSessionData.getIdleTimeMs().getOrDefault(id, 0L) + delta);
+                LogUtils.getLogger().debug("Player {} AFK time updated. Idle time: {}", id,
+                        PlayerSessionData.getIdleTimeMs().get(id));
             }
 
-            // Emit path event
             JsonObject pathPayload = new JsonObject();
             pathPayload.addProperty("player", id.toString());
             pathPayload.addProperty("world", player.serverLevel().dimension().location().toString());
             pathPayload.addProperty("x", currentPos.getX());
             pathPayload.addProperty("y", currentPos.getY());
             pathPayload.addProperty("z", currentPos.getZ());
-            EventHelper.sendEvent("player_path", pathPayload);
+            Event.sendEvent("player_path", pathPayload);
+            LogUtils.getLogger().debug("Sent player_path event for player {}", id);
 
-            // Social proximity
             double sumDist = 0.0;
             int count = 0;
             for (ServerPlayer other : allPlayers) {
@@ -183,7 +188,10 @@ public class PlayerEventHandler {
             socialPayload.addProperty("player", id.toString());
             socialPayload.addProperty("nearby_count", count);
             socialPayload.addProperty("avg_distance", avg);
-            EventHelper.sendEvent("social_proximity", socialPayload);
+            Event.sendEvent("social_proximity", socialPayload);
+            LogUtils.getLogger().debug("Sent social_proximity event for player {}. Nearby count: {}, Avg distance: {}",
+                    id, count,
+                    avg);
         }
     }
 }

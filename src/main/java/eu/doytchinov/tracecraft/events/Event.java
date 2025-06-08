@@ -1,6 +1,8 @@
 package eu.doytchinov.tracecraft.events;
 
 import com.google.gson.JsonObject;
+import eu.doytchinov.tracecraft.TraceCraft;
+import java.util.UUID;
 
 public class Event {
     private final JsonObject json;
@@ -40,5 +42,15 @@ public class Event {
     @Override
     public String toString() {
         return json.toString();
+    }
+
+    public static void sendEvent(String type, JsonObject payload) {
+        TraceCraft.QUEUE.addEvent(new Event(payload, type));
+    }
+
+    public static JsonObject createPlayerPayload(UUID playerId) {
+        JsonObject o = new JsonObject();
+        o.addProperty("player", playerId.toString());
+        return o;
     }
 }

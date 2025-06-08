@@ -3,6 +3,7 @@ package eu.doytchinov.tracecraft.server;
 import com.google.gson.JsonObject;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.event.TickEvent;
+import eu.doytchinov.tracecraft.events.Event;
 
 public class ServerMetricsHandler {
 
@@ -23,7 +24,7 @@ public class ServerMetricsHandler {
 
             JsonObject o = new JsonObject();
             o.addProperty("value", tps);
-            EventHelper.sendEvent("tps", o);
+            Event.sendEvent("tps", o);
 
             lastSampleMs = nowMs;
             lastSampleTick = server.getTickCount();
@@ -47,6 +48,6 @@ public class ServerMetricsHandler {
         JsonObject o = new JsonObject();
         o.addProperty("duration_ms", durationMs);
         o.addProperty("isr", isr);
-        EventHelper.sendEvent("tick_metrics", o);
+        Event.sendEvent("tick_metrics", o);
     }
 }
