@@ -93,6 +93,58 @@ public class InfluxDBHelper implements Runnable {
                         pointBuilder.addField("y", ev.getLong("y"));
                         pointBuilder.addField("z", ev.getLong("z"));
                         break;
+                    case "player_path":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.tag("world", ev.getString("world"));
+                        pointBuilder.addField("x", ev.getLong("x"));
+                        pointBuilder.addField("y", ev.getLong("y"));
+                        pointBuilder.addField("z", ev.getLong("z"));
+                        break;
+                    case "item_use":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.addField("item", ev.getString("item"));
+                        break;
+                    case "combat_event":
+                        pointBuilder.addField("damage", ev.getDouble("damage"));
+                        pointBuilder.tag("target_type", ev.getString("target_type"));
+                        try {
+                            String ap = ev.getString("attacker_player");
+                            if (!ap.isEmpty())
+                                pointBuilder.tag("attacker_player", ap);
+                        } catch (Exception ignored) {
+                        }
+                        try {
+                            String ae = ev.getString("attacker_entity");
+                            if (!ae.isEmpty())
+                                pointBuilder.tag("attacker_entity", ae);
+                        } catch (Exception ignored) {
+                        }
+                        break;
+                    case "player_death":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.addField("x", ev.getLong("x"));
+                        pointBuilder.addField("y", ev.getLong("y"));
+                        pointBuilder.addField("z", ev.getLong("z"));
+                        pointBuilder.tag("cause", ev.getString("cause"));
+                        break;
+                    case "session_distance":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.addField("distance", ev.getDouble("distance"));
+                        break;
+                    case "biome_time":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.tag("biome", ev.getString("biome"));
+                        pointBuilder.addField("duration_ms", ev.getLong("duration_ms"));
+                        break;
+                    case "social_proximity":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.addField("nearby_count", ev.getLong("nearby_count"));
+                        pointBuilder.addField("avg_distance", ev.getDouble("avg_distance"));
+                        break;
+                    case "session_idle":
+                        pointBuilder.tag("player", ev.getString("player"));
+                        pointBuilder.addField("idle_ms", ev.getLong("idle_ms"));
+                        break;
                     case "player_network_stats":
                         pointBuilder.tag("player", ev.getString("player"));
                         pointBuilder.addField("queued_messages", ev.getLong("queued_messages"));
