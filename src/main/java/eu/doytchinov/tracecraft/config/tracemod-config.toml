@@ -1,0 +1,2 @@
+influxdbUrl = "http://localhost:8086"
+enabled = true

@@ -2,6 +2,7 @@ package eu.doytchinov.tracecraft.influxdb;
 
 import com.google.gson.JsonObject;
 import eu.doytchinov.tracecraft.TraceCraft;
+import eu.doytchinov.tracecraft.config.ConfigHandler;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
@@ -17,7 +18,7 @@ public class InfluxDBHelper implements Runnable {
     private final String bucketName = "minecraft_metrics";
     private final String retentionPolicy = "autogen";
 
-    private static final String INFLUXDB_URL = "http://localhost:8086";
+    private static final String INFLUXDB_URL = ConfigHandler.getInfluxdbUrl();
     private static final String TOKEN = "Ri0u5ZwseTvdFHWrDKfH5fZVzL04tZkMiVzlIhWm5r3DazI2it2AweHUEZrPjDs1w7UMOfpgOxZRtc__D1gX7w==";
     private static final String ORG = "minecraft-tracecraft";
 

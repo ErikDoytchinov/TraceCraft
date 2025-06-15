@@ -3,6 +3,12 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+configurations {
+    shade
+    implementation.extendsFrom(shade)
 }
 
 version = mod_version
@@ -12,7 +18,6 @@ base {
     archivesName = mod_id
 }
 
-// Mojang ships Java 21 to end users in 1.20.5+, so your mod should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
@@ -122,13 +127,11 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation 'org.influxdb:influxdb-java:2.23'
-    jarJar 'org.influxdb:influxdb-java:2.23'
-
-    implementation fg.deobf("org.xerial:sqlite-jdbc:3.45.2.0")
-    jarJar("org.xerial:sqlite-jdbc:3.45.2.0")
-
-    implementation 'com.google.code.gson:gson:2.10.1'
+    shade('org.influxdb:influxdb-java:2.23') {
+        exclude group: 'org.slf4j'
+    }
+    shade 'org.xerial:sqlite-jdbc:3.45.2.0'
+    compileOnly 'com.google.code.gson:gson:2.10.1'
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -150,8 +153,26 @@ tasks.named('processResources', ProcessResources).configure {
     }
 }
 
-// Example for how to get properties into the manifest for reading at runtime.
+shadowJar {
+    configurations = [project.configurations.shade]
+
+    // *If* you ever need to move packages, do it here:
+    // relocate 'com.google.gson', 'my.mod.repack.gson'
+    // relocate 'org.slf4j', 'tracecraft.shadow.slf4j'
+    exclude 'org/slf4j/**'
+
+    mergeServiceFiles()
+    archiveClassifier.set('')
+}
+
+tasks.named('build') {
+    dependsOn shadowJar
+}
+
+artifacts { archives shadowJar }
+
 tasks.named('jar', Jar).configure {
+    enabled = false
     manifest {
         attributes([
             'Specification-Title'     : mod_id,
@@ -179,7 +200,7 @@ publishing {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
 }
 
 // IntelliJ no longer downloads javadocs and sources by default.
