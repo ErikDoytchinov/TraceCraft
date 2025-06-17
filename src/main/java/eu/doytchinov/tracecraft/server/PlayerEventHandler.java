@@ -35,9 +35,13 @@ public class PlayerEventHandler {
 
         if (e.getEntity() instanceof ServerPlayer player) {
             player.sendSystemMessage(net.minecraft.network.chat.Component
-                    .literal("TraceCraft: We are collecting your gameplay data for research. "
+                    .literal("TraceCraft: We are collecting server-side gameplay data for research. "
+                            + "If you have the TraceCraft client mod, additional metrics will be collected. "
                             + "If you prefer not to participate, please disconnect."));
+
             PlayerSessionData.initializePlayerData(playerId, player.blockPosition());
+            LogUtils.getLogger().info("Player {} logged in. Client mod status will be determined automatically.",
+                    playerId);
         }
     }
 
@@ -61,6 +65,9 @@ public class PlayerEventHandler {
         Event.sendEvent("session_idle", idlePayload);
 
         PlayerSessionData.clearPlayerData(id);
+        eu.doytchinov.tracecraft.util.ClientModDetection.cleanupPlayer(id);
+
+        LogUtils.getLogger().info("Player {} logged out and session data cleaned up.", id);
     }
 
     public static void handleItemUse(PlayerInteractEvent.RightClickItem e) {

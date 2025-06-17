@@ -39,29 +39,37 @@ public class TraceCraft {
         modEventBus.register(ConfigHandler.class);
 
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(eu.doytchinov.tracecraft.commands.TraceCraftCommands.class);
 
         context.registerConfig(ModConfig.Type.COMMON, COMMON_SPEC);
+
+        LOGGER.info(
+                "TraceCraft initialized - this mod collects server-side metrics and optional client metrics for research");
     }
 
     private void commonSetup(final FMLCommonSetupEvent e) {
         NetworkHandler.init();
+        LOGGER.info("Network handler initialized");
 
-        // Initialize InfluxDBHelper here, after configs are loaded
+        // init server-side components; these work regardless of client mod presence
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER
                 || (FMLEnvironment.dist == Dist.CLIENT
                         && net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer() != null)) {
-            if (INFLUX_DB_HELPER == null) { // Check if already initialized
+
+            if (INFLUX_DB_HELPER == null) {
                 try {
-                    LOGGER.info("Attempting to initialize InfluxDBHelper in commonSetup."); // Added log
+                    LOGGER.info("Initializing InfluxDB connection for server-side metrics collection");
                     INFLUX_DB_HELPER = new InfluxDBHelper();
                     SCHEDULER = Executors.newSingleThreadScheduledExecutor();
                     SCHEDULER.scheduleAtFixedRate(INFLUX_DB_HELPER, 2, 2, TimeUnit.SECONDS);
-                    LOGGER.info("TraceCraft InfluxDB writer initialised on server side via commonSetup");
-                } catch (Exception ex) { // Changed variable name from e to ex to avoid conflict
-                    LOGGER.error("Failed to initialise InfluxDBHelper in commonSetup: ", ex);
+                    LOGGER.info("TraceCraft server-side metrics collection initialized successfully");
+                } catch (Exception ex) {
+                    LOGGER.error("Failed to initialize InfluxDB connection. Server metrics will not be saved: ", ex);
                 }
             }
-            MinecraftForge.EVENT_BUS.register(new ServerHooks()); // This was inside the old if block, ensure it's correctly placed
+
+            MinecraftForge.EVENT_BUS.register(new ServerHooks());
+            LOGGER.info("Server-side event handlers registered");
         }
     }
 

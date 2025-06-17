@@ -18,6 +18,8 @@ public record ClientMetricsPacket(int fps, long mem, long ping) {
     }
 
     public void handle(ServerPlayer sender) {
+        eu.doytchinov.tracecraft.util.ClientModDetection.markPlayerHasMod(sender);
+
         JsonObject o = new JsonObject();
         o.addProperty("player", sender.getUUID().toString());
         o.addProperty("fps", fps);

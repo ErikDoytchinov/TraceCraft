@@ -19,18 +19,31 @@ public final class ClientHooks {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent e) {
-        if (Minecraft.getInstance().getConnection() == null) { return; } // not connected yet
-        if (e.phase != TickEvent.Phase.END) return;
+        if (Minecraft.getInstance().getConnection() == null)
+            return;
+        if (e.phase != TickEvent.Phase.END)
+            return;
 
         long now = System.currentTimeMillis();
-        if (now - lastSent < 5_000) return;      // send once per second
+        if (now - lastSent < 5_000)
+            return;
         lastSent = now;
 
-        int   fps = Minecraft.getInstance().getFps();
-        long  mem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long ping = Objects.requireNonNull(Minecraft.getInstance().getConnection().getServerData()).ping;
+        if (NetworkHandler.CHANNEL == null)
+            return;
 
-        NetworkHandler.CHANNEL
-                .send(new ClientMetricsPacket(fps, mem, ping), PacketDistributor.SERVER.noArg());
+        try {
+            int fps = Minecraft.getInstance().getFps();
+            long mem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            long ping = Objects.requireNonNull(Minecraft.getInstance().getConnection().getServerData()).ping;
+
+            ClientMetricsPacket packet = new ClientMetricsPacket(fps, mem, ping);
+            NetworkHandler.CHANNEL.send(packet, PacketDistributor.SERVER.noArg());
+        } catch (IllegalStateException ex) {
+            // server doesn't support our packets
+            // this is expected for servers without the mod
+        } catch (Exception ex) {
+            System.err.println("TraceCraft: Unexpected error sending client metrics: " + ex.getMessage());
+        }
     }
 }

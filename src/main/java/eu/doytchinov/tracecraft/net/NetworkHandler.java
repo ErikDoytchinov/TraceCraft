@@ -11,17 +11,24 @@ public final class NetworkHandler {
 
     public static SimpleChannel CHANNEL;
 
-    private NetworkHandler() {}
+    private NetworkHandler() {
+    }
 
     public static void init() {
-        if (CHANNEL != null) return;
+        if (CHANNEL != null)
+            return;
 
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(TraceCraft.MODID, "main");
 
         CHANNEL = ChannelBuilder
                 .named(id)
                 .networkProtocolVersion(PROTO)
-                .acceptedVersions((status, v) -> v == PROTO)
+                .acceptedVersions((status, v) -> {
+                    // allow server to accept clients without the mod (version 0)
+                    // allow clients to connect to servers with the mod (version PROTO)
+                    // allow matching versions (both have PROTO)
+                    return v == PROTO || v == 0;
+                })
                 .simpleChannel();
 
         registerPackets();
@@ -33,8 +40,15 @@ public final class NetworkHandler {
                 .encoder(ClientMetricsPacket::encode)
                 .decoder(ClientMetricsPacket::decode)
                 .consumerMainThread((pkt, ctx) -> {
+                    // only handle the packet if we have a valid sender (server-side)
                     if (ctx.getSender() != null) {
-                        pkt.handle(ctx.getSender());
+                        try {
+                            pkt.handle(ctx.getSender());
+                        } catch (Exception e) {
+                            com.mojang.logging.LogUtils.getLogger().warn(
+                                    "Failed to handle client metrics packet from player {}: {}",
+                                    ctx.getSender().getUUID(), e.getMessage());
+                        }
                     }
                 })
                 .add();

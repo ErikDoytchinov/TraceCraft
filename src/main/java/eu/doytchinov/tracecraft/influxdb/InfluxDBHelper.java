@@ -84,6 +84,12 @@ public class InfluxDBHelper implements Runnable {
                         pointBuilder.addField("mem", ev.getLong("mem"));
                         pointBuilder.addField("ping", ev.getLong("ping"));
                         break;
+                    case "mod_adoption":
+                        pointBuilder.addField("total_players", ev.getLong("total_players"));
+                        pointBuilder.addField("players_with_mod", ev.getLong("players_with_mod"));
+                        pointBuilder.addField("players_without_mod", ev.getLong("players_without_mod"));
+                        pointBuilder.addField("adoption_rate_percent", ev.getDouble("adoption_rate_percent"));
+                        break;
                     case "tick_metrics":
                         pointBuilder.addField("duration_ms", ev.getDouble("duration_ms"));
                         pointBuilder.addField("isr", ev.getDouble("isr"));
