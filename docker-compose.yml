@@ -29,6 +29,8 @@ services:
       GF_DATASOURCES_0_IS_DEFAULT: "true"
       GF_DATASOURCES_0_JSON_DATA: '{"defaultBucket":"minecraft_metrics","organization":"minecraft-tracecraft","version":"Flux","tlsSkipVerify":true}'
       GF_DATASOURCES_0_SECURE_JSON_DATA: '{"token":"Ri0u5Zw…"}'
+      GF_INSTALL_PLUGINS: "natel-discrete-panel,grafana-worldmap-panel"
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED: true
     depends_on:
       - influxdb
 
