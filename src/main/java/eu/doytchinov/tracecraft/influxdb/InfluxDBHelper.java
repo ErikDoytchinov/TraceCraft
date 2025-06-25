@@ -37,7 +37,13 @@ public class InfluxDBHelper implements Runnable {
 
     @Override
     public void run() {
-        var batch = TraceCraft.QUEUE.drain(256);
+        if (ConfigHandler.isDryRunMode()) {
+            LOGGER.info("[DRY-RUN] Would flush " + TraceCraft.QUEUE.size() + " events to InfluxDB");
+            TraceCraft.QUEUE.drain(ConfigHandler.getFlushThreshold());
+            return;
+        }
+
+        var batch = TraceCraft.QUEUE.drain(ConfigHandler.getFlushThreshold());
         if (batch.isEmpty()) {
             return;
         }

@@ -17,6 +17,7 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import eu.doytchinov.tracecraft.events.Event;
+import eu.doytchinov.tracecraft.config.ConfigHandler;
 
 public class WorldInteractionHandler {
 
@@ -34,18 +35,24 @@ public class WorldInteractionHandler {
     }
 
     public static void handleBlockPlace(BlockEvent.EntityPlaceEvent e) {
+        if (!ConfigHandler.areBlockEventsEnabled())
+            return;
         if (!(e.getEntity() instanceof ServerPlayer p))
             return;
         sendBlockEntityEvent(p, e.getPos(), e.getState(), "block_place");
     }
 
     public static void handleBlockBreak(BlockEvent.BreakEvent e) {
+        if (!ConfigHandler.areBlockEventsEnabled())
+            return;
         if (!(e.getPlayer() instanceof ServerPlayer p))
             return;
         sendBlockEntityEvent(p, e.getPos(), e.getState(), "block_break");
     }
 
     public static void handleLightUpdate(LevelEvent.Load event) {
+        if (!ConfigHandler.areWorldEventsEnabled())
+            return;
         if (event.getLevel() == null) {
             return;
         }
@@ -57,10 +64,14 @@ public class WorldInteractionHandler {
     }
 
     public static void handleChunkLoad(ChunkEvent.Load event) {
+        if (!ConfigHandler.areWorldEventsEnabled())
+            return;
         chunkGenStartNanos = System.nanoTime();
     }
 
     public static void handleChunkGenerated(ChunkEvent.Load event) {
+        if (!ConfigHandler.areWorldEventsEnabled())
+            return;
         if (chunkGenStartNanos == 0) {
             return;
         }
@@ -94,6 +105,8 @@ public class WorldInteractionHandler {
     }
 
     public static void handleNeighborNotify(BlockEvent.NeighborNotifyEvent e) {
+        if (!ConfigHandler.areWorldEventsEnabled())
+            return;
         BlockState state = e.getState();
         if (isPhysicsRelevant(state)) {
             JsonObject o = new JsonObject();

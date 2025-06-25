@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import eu.doytchinov.tracecraft.TraceCraft;
 import eu.doytchinov.tracecraft.events.Event;
 import eu.doytchinov.tracecraft.util.ChunkUtils;
+import eu.doytchinov.tracecraft.config.ConfigHandler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOutboundBuffer;
 import net.minecraft.server.MinecraftServer;
@@ -132,6 +133,10 @@ public final class TimedEventManager {
         }
 
         if (now >= nextQueueMetricsEvent) {
+            if (!ConfigHandler.areNetworkMetricsEnabled()) {
+                nextQueueMetricsEvent = now + METRICS_INTERVAL_MS;
+                return;
+            }
             if (sentPacketsField == null) {
                 nextQueueMetricsEvent = now + METRICS_INTERVAL_MS;
                 return;
@@ -186,6 +191,10 @@ public final class TimedEventManager {
         }
 
         if (now >= nextSystemMetricsEvent) {
+            if (!ConfigHandler.areSystemMetricsEnabled()) {
+                nextSystemMetricsEvent = now + METRICS_INTERVAL_MS;
+                return;
+            }
             Runtime runtime = Runtime.getRuntime();
             long maxMemory = runtime.maxMemory();
             long allocatedMemory = runtime.totalMemory();

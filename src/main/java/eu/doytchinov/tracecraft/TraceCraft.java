@@ -61,6 +61,14 @@ public class TraceCraft {
                     LOGGER.info("Initializing InfluxDB connection for server-side metrics collection");
                     INFLUX_DB_HELPER = new InfluxDBHelper();
                     SCHEDULER = Executors.newSingleThreadScheduledExecutor();
+                    // schedule regular flushes every 2 seconds, but also check if queue should
+                    // flush more frequently
+                    SCHEDULER.scheduleAtFixedRate(() -> {
+                        if (QUEUE.shouldFlush()) {
+                            INFLUX_DB_HELPER.run();
+                        }
+                    }, 0, 1, TimeUnit.SECONDS);
+
                     SCHEDULER.scheduleAtFixedRate(INFLUX_DB_HELPER, 2, 2, TimeUnit.SECONDS);
                     LOGGER.info("TraceCraft server-side metrics collection initialized successfully");
                 } catch (Exception ex) {

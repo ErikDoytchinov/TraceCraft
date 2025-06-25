@@ -3,6 +3,7 @@ package eu.doytchinov.tracecraft.server;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import eu.doytchinov.tracecraft.events.Event;
+import eu.doytchinov.tracecraft.config.ConfigHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
@@ -26,7 +27,6 @@ import java.util.UUID;
 
 public class PlayerEventHandler {
     private static final long AFK_THRESHOLD_MS = 300_000L; // 5 minutes
-    private static long pathSampleIntervalMs = 1000L;
     private static long lastPathSampleMs = System.currentTimeMillis();
 
     public static void handleLogin(PlayerEvent.PlayerLoggedInEvent e) {
@@ -71,6 +71,8 @@ public class PlayerEventHandler {
     }
 
     public static void handleItemUse(PlayerInteractEvent.RightClickItem e) {
+        if (!ConfigHandler.isPlayerBehaviorEnabled())
+            return;
         if (!(e.getEntity() instanceof ServerPlayer p))
             return;
         JsonObject o = new JsonObject();
@@ -81,6 +83,8 @@ public class PlayerEventHandler {
     }
 
     public static void handleCombatEvent(LivingHurtEvent event) {
+        if (!ConfigHandler.areCombatEventsEnabled())
+            return;
         var target = event.getEntity();
         DamageSource src = event.getSource();
         var attacker = src.getEntity();
@@ -98,6 +102,8 @@ public class PlayerEventHandler {
     }
 
     public static void handlePlayerDeath(LivingDeathEvent event) {
+        if (!ConfigHandler.areCombatEventsEnabled())
+            return;
         if (!(event.getEntity() instanceof ServerPlayer p))
             return;
         BlockPos pos = p.blockPosition();
@@ -111,10 +117,13 @@ public class PlayerEventHandler {
     }
 
     public static void samplePlayerPathsAndProximity(TickEvent.ServerTickEvent event, MinecraftServer server) {
+        if (!ConfigHandler.isPlayerBehaviorEnabled())
+            return;
         if (event.phase != TickEvent.Phase.END)
             return;
         long now = System.currentTimeMillis();
         long delta = now - lastPathSampleMs;
+        long pathSampleIntervalMs = ConfigHandler.getPlayerLocationSampleInterval();
         if (delta < pathSampleIntervalMs)
             return;
         lastPathSampleMs = now;

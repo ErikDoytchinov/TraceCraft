@@ -1,14 +1,25 @@
 package eu.doytchinov.tracecraft.database;
 
 import eu.doytchinov.tracecraft.events.Event;
+import eu.doytchinov.tracecraft.config.ConfigHandler;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class EventQueue {
-    private static final int CAP = 1000;
-    private final LinkedBlockingQueue<Event> q = new LinkedBlockingQueue<>(CAP);
+    private final LinkedBlockingQueue<Event> q;
+
+    public EventQueue() {
+        // initialize with configurable capacity, fallback to 1000 if config not available
+        int capacity;
+        try {
+            capacity = ConfigHandler.getQueueSize();
+        } catch (Exception e) {
+            capacity = 1000;
+        }
+        this.q = new LinkedBlockingQueue<>(capacity);
+    }
 
     public void addEvent(Event e) {
         q.offer(e);
@@ -26,5 +37,13 @@ public class EventQueue {
 
     public int size() {
         return q.size();
+    }
+
+    public boolean shouldFlush() {
+        try {
+            return q.size() >= ConfigHandler.getFlushThreshold();
+        } catch (Exception e) {
+            return q.size() >= 100;
+        }
     }
 }

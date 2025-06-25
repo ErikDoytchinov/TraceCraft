@@ -2,6 +2,9 @@ package eu.doytchinov.tracecraft.events;
 
 import com.google.gson.JsonObject;
 import eu.doytchinov.tracecraft.TraceCraft;
+import eu.doytchinov.tracecraft.config.ConfigHandler;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.UUID;
 
 public class Event {
@@ -45,6 +48,13 @@ public class Event {
     }
 
     public static void sendEvent(String type, JsonObject payload) {
+        // In dry-run mode, log the event instead of queuing it
+        if (ConfigHandler.isDryRunMode()) {
+            Logger logger = LogManager.getLogger();
+            logger.info("[DRY-RUN] Event: {} - Data: {}", type, payload.toString());
+            return;
+        }
+
         TraceCraft.QUEUE.addEvent(new Event(payload, type));
     }
 
