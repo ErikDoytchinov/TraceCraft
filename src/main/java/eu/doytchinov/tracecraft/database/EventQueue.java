@@ -5,29 +5,27 @@ import eu.doytchinov.tracecraft.config.ConfigHandler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class EventQueue {
-    private final LinkedBlockingQueue<Event> q;
+    private final ConcurrentLinkedQueue<Event> q;
 
     public EventQueue() {
-        // initialize with configurable capacity, fallback to 1000 if config not available
-        int capacity;
-        try {
-            capacity = ConfigHandler.getQueueSize();
-        } catch (Exception e) {
-            capacity = 1000;
-        }
-        this.q = new LinkedBlockingQueue<>(capacity);
+        this.q = new ConcurrentLinkedQueue<>();
     }
 
     public void addEvent(Event e) {
-        q.offer(e);
+        q.add(e); // Non-blocking add
     }
 
     public List<Event> drain(int max) {
         List<Event> out = new ArrayList<>();
-        q.drainTo(out, max);
+        for (int i = 0; i < max && !q.isEmpty(); i++) {
+            Event e = q.poll(); // Non-blocking poll
+            if (e != null) {
+                out.add(e);
+            }
+        }
         return out;
     }
 

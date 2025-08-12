@@ -1,0 +1,67 @@
+Linux 6.6.74+rpt-rpi-2712 (raspberrypi) 	06/20/25 	_aarch64_	(4 CPU)
+
+20:12:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:13:20      999   3666111   17.48    0.80    0.00    0.00   18.28     0  java
+
+20:12:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:13:20      999   3666111      0.15      0.00 11914880 1041376  12.61  java
+
+20:13:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:14:20      999   3666111   24.27    1.23    0.00    0.00   25.50     0  java
+
+20:13:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:14:20      999   3666111      0.62      0.00 11914880 1041376  12.61  java
+
+20:14:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:15:20      999   3666111   23.92    0.98    0.00    0.00   24.90     0  java
+
+20:14:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:15:20      999   3666111      0.75      0.00 11914880 1042400  12.62  java
+
+20:15:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:16:20      999   3666111   22.70    0.98    0.00    0.00   23.68     0  java
+
+20:15:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:16:20      999   3666111      0.13      0.00 11914880 1042912  12.63  java
+
+20:16:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:17:20      999   3666111   21.68    1.08    0.00    0.00   22.77     0  java
+
+20:16:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:17:20      999   3666111      0.17      0.00 11914880 1042912  12.63  java
+
+20:17:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:18:20      999   3666111   21.28    0.97    0.00    0.00   22.25     0  java
+
+20:17:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:18:20      999   3666111      0.18      0.00 11914880 1043424  12.64  java
+
+20:18:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:19:20      999   3666111   22.48    0.97    0.00    0.00   23.45     0  java
+
+20:18:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:19:20      999   3666111      0.18      0.00 11914880 1043424  12.64  java
+
+20:19:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:20:20      999   3666111   32.45    1.27    0.00    0.00   33.72     0  java
+
+20:19:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:20:20      999   3666111      0.67      0.00 11914880 1043936  12.64  java
+
+20:20:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:21:20      999   3666111   25.68    1.08    0.00    0.00   26.77     0  java
+
+20:20:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:21:20      999   3666111      0.10      0.00 11914880 1043936  12.64  java
+
+20:21:20      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+20:22:20      999   3666111   23.23    1.05    0.00    0.00   24.28     0  java
+
+20:21:20      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+20:22:20      999   3666111      0.18      0.00 11914880 1043936  12.64  java
+
+Average:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+Average:      999   3666111   23.52    1.04    0.00    0.00   24.56     -  java
+
+Average:      UID       PID  minflt/s  majflt/s     VSZ     RSS   %MEM  Command
+Average:      999   3666111      0.31      0.00 11914880 1042963  12.63  java
